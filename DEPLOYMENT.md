@@ -11,22 +11,23 @@ Deploy your crypto streaming pipeline online for free using Render and Streamlit
 
 ## Deployment Options
 
-### Option 1: Render (Recommended - Always Running)
+### Option 1: Railway (Recommended - Free $5 Credit/Month)
 
-Render offers free tier with 750 hours/month per service.
+Railway offers $5 free credit per month, enough for 24/7 operation of lightweight services.
 
-#### Deploy Producer
+#### Deploy to Railway
 
-1. Go to https://render.com and sign in with GitHub
-2. Click "New +" → "Background Worker" (NOT Web Service!)
-3. Connect your GitHub repository
-4. Configure:
-   - Name: `crypto-producer`
-   - Environment: `Python 3`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python src/producer.py`
-   - Instance Type: `Free`
-5. Add Environment Variables (click "Advanced"):
+1. Go to https://railway.app and sign in with GitHub
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select your repository: `Real-Time-Financial-Crypto-Streaming-Pipeline`
+4. Railway will detect your code
+
+#### Add Producer Service
+
+1. Click "New" → "Empty Service"
+2. Name it: `producer`
+3. Settings → Start Command: `python src/producer.py`
+4. Variables tab → Add environment variables:
    ```
    KAFKA_BOOTSTRAP_SERVERS=d6benh9dvf8ruqkbmp8g.any.us-east-1.mpx.prd.cloud.redpanda.com:9092
    KAFKA_USERNAME=crypto-producer
@@ -35,19 +36,14 @@ Render offers free tier with 750 hours/month per service.
    SYMBOLS=BTCUSDT,ETHUSDT
    LOG_LEVEL=INFO
    ```
-6. Click "Create Background Worker"
+5. Deploy
 
-#### Deploy Consumer
+#### Add Consumer Service
 
-1. Click "New +" → "Background Worker" (NOT Web Service!)
-2. Connect same repository
-3. Configure:
-   - Name: `crypto-consumer`
-   - Environment: `Python 3`
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python src/consumer.py`
-   - Instance Type: `Free`
-4. Add Environment Variables:
+1. Click "New" → "Empty Service"
+2. Name it: `consumer`
+3. Settings → Start Command: `python src/consumer.py`
+4. Variables tab → Add environment variables:
    ```
    KAFKA_BOOTSTRAP_SERVERS=d6benh9dvf8ruqkbmp8g.any.us-east-1.mpx.prd.cloud.redpanda.com:9092
    KAFKA_USERNAME=crypto-producer
@@ -58,18 +54,33 @@ Render offers free tier with 750 hours/month per service.
    MOVING_AVERAGE_WINDOW=100
    LOG_LEVEL=INFO
    ```
-5. Click "Create Background Worker"
+5. Deploy
 
-### Option 2: Railway (Alternative)
+### Option 2: Run Locally (Completely Free)
 
-1. Go to https://railway.app and sign in with GitHub
-2. Click "New Project" → "Deploy from GitHub repo"
-3. Select your repository
-4. Add two services:
-   - Service 1: Start Command = `python src/producer.py`
-   - Service 2: Start Command = `python src/consumer.py`
-5. Add environment variables to each service
-6. Deploy
+Keep your computer running with the services:
+
+```bash
+# Terminal 1: Producer
+python src/producer.py
+
+# Terminal 2: Consumer  
+python src/consumer.py
+```
+
+Use `tmux` or `screen` to keep them running in background.
+
+### Option 3: GitHub Codespaces (60 hours/month free)
+
+1. Go to your GitHub repo
+2. Click "Code" → "Codespaces" → "Create codespace"
+3. In the codespace terminal:
+   ```bash
+   pip install -r requirements.txt
+   python src/producer.py &
+   python src/consumer.py &
+   ```
+4. Keep the codespace running
 
 ### Deploy Dashboard (Streamlit Cloud)
 
@@ -136,11 +147,13 @@ Your dashboard will be live at: `https://your-app-name.streamlit.app`
 
 ## Cost Summary
 
-All services are FREE:
-- Render: 750 hours/month per service (2 services = 1500 hours)
+All services have free tiers:
+- Railway: $5 credit/month (enough for 24/7 lightweight services)
 - Streamlit Cloud: Unlimited public apps
-- Upstash Kafka: 10k messages/day
+- Redpanda/Upstash Kafka: 10k messages/day
 - Neon PostgreSQL: 0.5 GB storage
+
+Alternative: Run locally for completely free operation.
 
 ## Monitoring
 
