@@ -6,6 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Try to load Streamlit secrets if available
+try:
+    import streamlit as st
+
+    _use_streamlit_secrets = hasattr(st, "secrets") and len(st.secrets) > 0
+except (ImportError, FileNotFoundError):
+    _use_streamlit_secrets = False
+
 
 class Config:
     """Application configuration."""
@@ -16,13 +24,32 @@ class Config:
     KAFKA_PASSWORD: str = os.getenv("KAFKA_PASSWORD", "")
     KAFKA_TOPIC: str = os.getenv("KAFKA_TOPIC", "crypto-trades")
 
-    # Database Configuration
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    # Database Configuration - try Streamlit secrets first, then env
+    if _use_streamlit_secrets:
+        try:
+            import streamlit as st
 
-    # Application Configuration
-    SYMBOLS: List[str] = os.getenv("SYMBOLS", "BTCUSDT,ETHUSDT").split(",")
-    WHALE_THRESHOLD: float = float(os.getenv("WHALE_THRESHOLD", "100000"))
-    MOVING_AVERAGE_WINDOW: int = int(os.getenv("MOVING_AVERAGE_WINDOW", "100"))
+            DATABASE_URL: str = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL", ""))
+            SYMBOLS: List[str] = st.secrets.get(
+                "SYMBOLS", os.getenv("SYMBOLS", "BTCUSDT,ETHUSDT")
+            ).split(",")
+            WHALE_THRESHOLD: float = float(
+                st.secrets.get("WHALE_THRESHOLD", os.getenv("WHALE_THRESHOLD", "100000"))
+            )
+            MOVING_AVERAGE_WINDOW: int = int(
+                st.secrets.get("MOVING_AVERAGE_WINDOW", os.getenv("MOVING_AVERAGE_WINDOW", "100"))
+            )
+        except:
+            DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+            SYMBOLS: List[str] = os.getenv("SYMBOLS", "BTCUSDT,ETHUSDT").split(",")
+            WHALE_THRESHOLD: float = float(os.getenv("WHALE_THRESHOLD", "100000"))
+            MOVING_AVERAGE_WINDOW: int = int(os.getenv("MOVING_AVERAGE_WINDOW", "100"))
+    else:
+        DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+        SYMBOLS: List[str] = os.getenv("SYMBOLS", "BTCUSDT,ETHUSDT").split(",")
+        WHALE_THRESHOLD: float = float(os.getenv("WHALE_THRESHOLD", "100000"))
+        MOVING_AVERAGE_WINDOW: int = int(os.getenv("MOVING_AVERAGE_WINDOW", "100"))
+
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
     # Binance WebSocket
