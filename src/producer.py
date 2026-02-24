@@ -22,7 +22,7 @@ class CryptoProducer:
 
     def __init__(self):
         """Initialize the producer."""
-        Config.validate()
+        Config.validate(require_database=False)
         self.producer = self._create_producer()
         self.ws = None
 

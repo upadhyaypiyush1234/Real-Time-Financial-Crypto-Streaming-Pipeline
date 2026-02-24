@@ -29,14 +29,16 @@ class Config:
     BINANCE_WS_URL: str = "wss://stream.binance.com:9443/ws"
 
     @classmethod
-    def validate(cls) -> None:
+    def validate(cls, require_database: bool = True) -> None:
         """Validate required configuration."""
         required = [
             ("KAFKA_BOOTSTRAP_SERVERS", cls.KAFKA_BOOTSTRAP_SERVERS),
             ("KAFKA_USERNAME", cls.KAFKA_USERNAME),
             ("KAFKA_PASSWORD", cls.KAFKA_PASSWORD),
-            ("DATABASE_URL", cls.DATABASE_URL),
         ]
+
+        if require_database:
+            required.append(("DATABASE_URL", cls.DATABASE_URL))
 
         missing = [name for name, value in required if not value]
         if missing:
