@@ -71,7 +71,7 @@ class CryptoConsumer:
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
             auto_offset_reset="latest",
             enable_auto_commit=True,
-            group_id="crypto-consumer-group",
+            group_id="crypto-consumer-group-v2",  # New group to start fresh
         )
 
     def _store_trade(self, trade: Dict, metrics: Dict) -> None:
@@ -173,9 +173,9 @@ class CryptoConsumer:
                         f"${trade['trade_value']:,.2f} @ ${trade['price']}"
                     )
 
-                logger.debug(
+                logger.info(
                     f"Processed {trade['symbol']}: "
-                    f"${trade['price']} | MA: ${metrics['moving_average']:.2f}"
+                    f"${trade['price']:.2f} | MA: ${metrics['moving_average']:.2f}"
                 )
 
         except KeyboardInterrupt:
