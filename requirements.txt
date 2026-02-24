@@ -4,9 +4,9 @@ kafka-python-ng==2.2.2
 # WebSocket
 websocket-client==1.7.0
 
-# Database
-psycopg2-binary==2.9.9
-sqlalchemy==2.0.36
+# Database (use latest versions with pre-built wheels)
+psycopg2-binary>=2.9.10
+sqlalchemy>=2.0.36
 
 # Data Processing (flexible versions for pre-built wheels)
 pandas>=2.0.0
