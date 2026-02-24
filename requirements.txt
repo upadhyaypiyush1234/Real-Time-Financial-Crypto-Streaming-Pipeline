@@ -1,5 +1,5 @@
 # Kafka
-kafka-python==2.0.2
+confluent-kafka==2.3.0
 
 # WebSocket
 websocket-client==1.7.0
