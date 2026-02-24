@@ -18,7 +18,7 @@ Render offers free tier with 750 hours/month per service.
 #### Deploy Producer
 
 1. Go to https://render.com and sign in with GitHub
-2. Click "New +" → "Web Service"
+2. Click "New +" → "Background Worker" (NOT Web Service!)
 3. Connect your GitHub repository
 4. Configure:
    - Name: `crypto-producer`
@@ -28,18 +28,18 @@ Render offers free tier with 750 hours/month per service.
    - Instance Type: `Free`
 5. Add Environment Variables (click "Advanced"):
    ```
-   KAFKA_BOOTSTRAP_SERVERS=your-cluster.upstash.io:9092
-   KAFKA_USERNAME=your-username
-   KAFKA_PASSWORD=your-password
+   KAFKA_BOOTSTRAP_SERVERS=d6benh9dvf8ruqkbmp8g.any.us-east-1.mpx.prd.cloud.redpanda.com:9092
+   KAFKA_USERNAME=crypto-producer
+   KAFKA_PASSWORD=abTUpmkCnKl8TMd7YFJaM83ByNrDTl
    KAFKA_TOPIC=crypto-trades
    SYMBOLS=BTCUSDT,ETHUSDT
    LOG_LEVEL=INFO
    ```
-6. Click "Create Web Service"
+6. Click "Create Background Worker"
 
 #### Deploy Consumer
 
-1. Click "New +" → "Web Service"
+1. Click "New +" → "Background Worker" (NOT Web Service!)
 2. Connect same repository
 3. Configure:
    - Name: `crypto-consumer`
@@ -49,16 +49,16 @@ Render offers free tier with 750 hours/month per service.
    - Instance Type: `Free`
 4. Add Environment Variables:
    ```
-   KAFKA_BOOTSTRAP_SERVERS=your-cluster.upstash.io:9092
-   KAFKA_USERNAME=your-username
-   KAFKA_PASSWORD=your-password
+   KAFKA_BOOTSTRAP_SERVERS=d6benh9dvf8ruqkbmp8g.any.us-east-1.mpx.prd.cloud.redpanda.com:9092
+   KAFKA_USERNAME=crypto-producer
+   KAFKA_PASSWORD=abTUpmkCnKl8TMd7YFJaM83ByNrDTl
    KAFKA_TOPIC=crypto-trades
-   DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
+   DATABASE_URL=postgresql://neondb_owner:npg_bBCIpR3NGK9c@ep-holy-math-aik2zwlo-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require
    WHALE_THRESHOLD=100000
    MOVING_AVERAGE_WINDOW=100
    LOG_LEVEL=INFO
    ```
-5. Click "Create Web Service"
+5. Click "Create Background Worker"
 
 ### Option 2: Railway (Alternative)
 

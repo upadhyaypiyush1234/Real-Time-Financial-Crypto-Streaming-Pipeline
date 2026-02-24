@@ -51,7 +51,7 @@ Visit http://localhost:8501 - if you see data, you're good!
 ### Option A: Render (Recommended)
 - [ ] Go to https://render.com
 - [ ] Sign in with GitHub
-- [ ] New Web Service → Connect your repo
+- [ ] New **Background Worker** (NOT Web Service!) → Connect your repo
 - [ ] Service 1: `crypto-producer`
   - Start Command: `python src/producer.py`
   - Add env vars (Kafka credentials)
