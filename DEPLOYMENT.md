@@ -1,247 +1,157 @@
 # Deployment Guide
 
-Complete step-by-step guide to deploy the crypto streaming pipeline for free.
+Deploy your crypto streaming pipeline online for free using Render and Streamlit Cloud.
 
 ## Prerequisites
 
-- GitHub account
-- Python 3.11+ installed locally
-- Git installed
+- GitHub account with your code pushed
+- Upstash Kafka credentials
+- Neon PostgreSQL credentials
+- Database already initialized (run `python scripts/setup_database.py` locally first)
 
-## Step 1: Set Up Upstash Kafka (Free)
+## Deployment Options
 
-1. Go to https://upstash.com
-2. Sign in with GitHub
-3. Click "Create Cluster"
-4. Select a region close to you
-5. Copy the following credentials:
-   - Bootstrap Servers (e.g., `xxx.upstash.io:9092`)
-   - Username
-   - Password
-6. Create a topic named `crypto-trades`:
-   - Go to Topics tab
-   - Click "Create Topic"
-   - Name: `crypto-trades`
-   - Partitions: 1
-   - Retention: 7 days
+### Option 1: Render (Recommended - Always Running)
 
-## Step 2: Set Up Neon PostgreSQL (Free)
+Render offers free tier with 750 hours/month per service.
 
-1. Go to https://neon.tech
-2. Sign in with GitHub
-3. Click "Create Project"
-4. Name: `crypto-pipeline`
-5. Region: Select closest to you
-6. Click "Create Project"
-7. Copy the connection string (starts with `postgresql://`)
-8. Keep this tab open for later
+#### Deploy Producer
 
-## Step 3: Initialize Database
+1. Go to https://render.com and sign in with GitHub
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repository
+4. Configure:
+   - Name: `crypto-producer`
+   - Environment: `Python 3`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python src/producer.py`
+   - Instance Type: `Free`
+5. Add Environment Variables (click "Advanced"):
+   ```
+   KAFKA_BOOTSTRAP_SERVERS=your-cluster.upstash.io:9092
+   KAFKA_USERNAME=your-username
+   KAFKA_PASSWORD=your-password
+   KAFKA_TOPIC=crypto-trades
+   SYMBOLS=BTCUSDT,ETHUSDT
+   LOG_LEVEL=INFO
+   ```
+6. Click "Create Web Service"
 
-1. Clone your repository locally:
-```bash
-git clone <your-repo-url>
-cd crypto-streaming-pipeline
-```
+#### Deploy Consumer
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+1. Click "New +" → "Web Service"
+2. Connect same repository
+3. Configure:
+   - Name: `crypto-consumer`
+   - Environment: `Python 3`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python src/consumer.py`
+   - Instance Type: `Free`
+4. Add Environment Variables:
+   ```
+   KAFKA_BOOTSTRAP_SERVERS=your-cluster.upstash.io:9092
+   KAFKA_USERNAME=your-username
+   KAFKA_PASSWORD=your-password
+   KAFKA_TOPIC=crypto-trades
+   DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
+   WHALE_THRESHOLD=100000
+   MOVING_AVERAGE_WINDOW=100
+   LOG_LEVEL=INFO
+   ```
+5. Click "Create Web Service"
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+### Option 2: Railway (Alternative)
 
-4. Create `.env` file:
-```bash
-cp .env.example .env
-```
+1. Go to https://railway.app and sign in with GitHub
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select your repository
+4. Add two services:
+   - Service 1: Start Command = `python src/producer.py`
+   - Service 2: Start Command = `python src/consumer.py`
+5. Add environment variables to each service
+6. Deploy
 
-5. Edit `.env` with your credentials:
-```env
-KAFKA_BOOTSTRAP_SERVERS=your-cluster.upstash.io:9092
-KAFKA_USERNAME=your-username
-KAFKA_PASSWORD=your-password
-KAFKA_TOPIC=crypto-trades
-DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
-SYMBOLS=BTCUSDT,ETHUSDT
-WHALE_THRESHOLD=100000
-MOVING_AVERAGE_WINDOW=100
-LOG_LEVEL=INFO
-```
-
-6. Run database setup:
-```bash
-python scripts/setup_database.py
-```
-
-You should see:
-```
-✓ Created trades table
-✓ Created trade_aggregates table
-✓ Created indexes
-Database setup completed successfully!
-```
-
-## Step 4: Test Locally
-
-1. Terminal 1 - Start Producer:
-```bash
-cd src
-python producer.py
-```
-
-You should see:
-```
-Starting crypto producer...
-WebSocket connection opened
-Subscribed to streams: ['btcusdt@trade', 'ethusdt@trade']
-```
-
-2. Terminal 2 - Start Consumer:
-```bash
-cd src
-python consumer.py
-```
-
-You should see:
-```
-Starting crypto consumer...
-Subscribed to topic: crypto-trades
-Processed BTCUSDT: $50000.00 | MA: $50000.00
-```
-
-3. Terminal 3 - Start Dashboard:
-```bash
-streamlit run src/dashboard.py
-```
-
-Open http://localhost:8501 in your browser.
-
-If you see data flowing, everything works! Press Ctrl+C to stop all processes.
-
-## Step 5: Deploy to GitHub Actions
-
-1. Push code to GitHub:
-```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
-```
-
-2. Add secrets to GitHub:
-   - Go to your repository on GitHub
-   - Settings → Secrets and variables → Actions
-   - Click "New repository secret"
-   - Add each secret:
-     - `KAFKA_BOOTSTRAP_SERVERS`
-     - `KAFKA_USERNAME`
-     - `KAFKA_PASSWORD`
-     - `KAFKA_TOPIC`
-     - `DATABASE_URL`
-     - `SYMBOLS`
-     - `WHALE_THRESHOLD`
-     - `MOVING_AVERAGE_WINDOW`
-
-3. Enable GitHub Actions:
-   - Go to Actions tab
-   - Click "I understand my workflows, go ahead and enable them"
-
-4. Manually trigger workflows:
-   - Go to Actions tab
-   - Click "Crypto Producer" workflow
-   - Click "Run workflow" → "Run workflow"
-   - Repeat for "Crypto Consumer" workflow
-
-5. Monitor logs:
-   - Click on running workflow
-   - Click on job name
-   - View real-time logs
-
-**Note**: GitHub Actions has a 6-hour timeout for jobs. For continuous operation, consider:
-- Using a free tier cloud service (Railway, Render)
-- Running locally on your machine
-- Using a Raspberry Pi or old laptop
-
-## Step 6: Deploy Streamlit Dashboard
+### Deploy Dashboard (Streamlit Cloud)
 
 1. Go to https://streamlit.io/cloud
 2. Sign in with GitHub
 3. Click "New app"
-4. Select your repository
-5. Main file path: `src/dashboard.py`
-6. Click "Advanced settings"
-7. Add secrets (same as .env file):
-```toml
-KAFKA_BOOTSTRAP_SERVERS = "your-cluster.upstash.io:9092"
-KAFKA_USERNAME = "your-username"
-KAFKA_PASSWORD = "your-password"
-KAFKA_TOPIC = "crypto-trades"
-DATABASE_URL = "postgresql://user:password@host.neon.tech/dbname?sslmode=require"
-SYMBOLS = "BTCUSDT,ETHUSDT"
-WHALE_THRESHOLD = "100000"
-MOVING_AVERAGE_WINDOW = "100"
-LOG_LEVEL = "INFO"
-```
-8. Click "Deploy"
+4. Configure:
+   - Repository: Select your repo
+   - Branch: `main`
+   - Main file path: `src/dashboard.py`
+5. Click "Advanced settings" → Add secrets:
+   ```toml
+   DATABASE_URL = "postgresql://user:password@host.neon.tech/dbname?sslmode=require"
+   SYMBOLS = "BTCUSDT,ETHUSDT"
+   WHALE_THRESHOLD = "100000"
+   MOVING_AVERAGE_WINDOW = "100"
+   ```
+6. Click "Deploy"
 
 Your dashboard will be live at: `https://your-app-name.streamlit.app`
 
-## Step 7: Verify Everything Works
+## Verify Deployment
 
-1. Check Upstash dashboard:
-   - Should see messages flowing through topic
-   - Monitor throughput and lag
+1. **Check Producer Logs** (Render/Railway):
+   - Should see: "WebSocket connection opened"
+   - Should see: "Subscribed to streams"
 
-2. Check Neon dashboard:
-   - Should see database size growing
-   - Monitor query performance
+2. **Check Consumer Logs**:
+   - Should see: "Processed BTCUSDT: $..."
+   - Should see database writes
 
-3. Check Streamlit dashboard:
+3. **Check Dashboard**:
+   - Visit your Streamlit URL
    - Should see live price updates
-   - Charts should update automatically
-   - Whale trades should appear
+   - Charts should populate with data
+
+4. **Check Upstash Dashboard**:
+   - Go to https://console.upstash.com
+   - Select your cluster → Topics → crypto-trades
+   - Should see messages flowing
+
+5. **Check Neon Dashboard**:
+   - Go to https://console.neon.tech
+   - Select your project → Tables
+   - Run query: `SELECT COUNT(*) FROM trades;`
+   - Should see growing count
 
 ## Troubleshooting
 
-### Producer not connecting to Kafka
-- Verify Upstash credentials
-- Check if topic exists
-- Ensure firewall allows outbound connections
+### Producer/Consumer Not Starting
+- Check logs in Render/Railway dashboard
+- Verify all environment variables are set
+- Ensure credentials are correct
 
-### Consumer not processing messages
-- Check Kafka topic has messages
-- Verify database connection
-- Check consumer group is active in Upstash
+### No Data in Dashboard
+- Verify consumer is running and processing messages
+- Check database connection: `SELECT * FROM trades LIMIT 10;`
+- Ensure Streamlit secrets match your .env
 
-### Dashboard shows no data
-- Verify database has data: `SELECT COUNT(*) FROM trades;`
-- Check DATABASE_URL in Streamlit secrets
-- Ensure consumer is running
+### Render Free Tier Limitations
+- Services sleep after 15 minutes of inactivity
+- 750 hours/month per service (enough for 24/7 operation)
+- If services stop, they auto-restart on next request
 
-### GitHub Actions failing
-- Check secrets are set correctly
-- View workflow logs for specific errors
-- Ensure requirements.txt is up to date
+## Cost Summary
 
-## Cost Monitoring
-
-All services used are free tier:
-- Upstash Kafka: 10k messages/day free
-- Neon PostgreSQL: 0.5 GB storage free
+All services are FREE:
+- Render: 750 hours/month per service (2 services = 1500 hours)
 - Streamlit Cloud: Unlimited public apps
-- GitHub Actions: 2000 minutes/month free
+- Upstash Kafka: 10k messages/day
+- Neon PostgreSQL: 0.5 GB storage
 
-Monitor usage in each dashboard to stay within limits.
+## Monitoring
+
+- Render: View logs in dashboard
+- Streamlit: Built-in analytics
+- Upstash: Message throughput and lag
+- Neon: Database size and query performance
 
 ## Next Steps
 
-- Add more symbols (ETH, BNB, SOL)
+- Add more crypto symbols
 - Implement price alerts
-- Add technical indicators (RSI, MACD)
-- Create email notifications for whale trades
-- Add authentication to dashboard
-- Implement data retention policies
+- Add technical indicators
+- Set up email notifications for whale trades
