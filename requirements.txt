@@ -1,5 +1,5 @@
-# Kafka
-confluent-kafka==2.3.0
+# Kafka (kafka-python-ng is Python 3.14 compatible fork)
+kafka-python-ng==2.2.2
 
 # WebSocket
 websocket-client==1.7.0

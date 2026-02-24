@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: crypto-producer
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/producer.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+  - type: web
+    name: crypto-consumer
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/consumer.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9

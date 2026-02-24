@@ -5,7 +5,8 @@ import logging
 import time
 from typing import Dict, Any
 import websocket
-from confluent_kafka import Producer
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
 from config import Config
 
@@ -25,25 +26,16 @@ class CryptoProducer:
         self.producer = self._create_producer()
         self.ws = None
 
-    def _create_producer(self) -> Producer:
+    def _create_producer(self) -> KafkaProducer:
         """Create and configure Kafka producer."""
-        kafka_config = {
-            "bootstrap.servers": Config.KAFKA_BOOTSTRAP_SERVERS,
-            "sasl.mechanism": "SCRAM-SHA-256",
-            "security.protocol": "SASL_SSL",
-            "sasl.username": Config.KAFKA_USERNAME,
-            "sasl.password": Config.KAFKA_PASSWORD,
-            "acks": "all",
-            "retries": 3,
-        }
-        return Producer(kafka_config)
-
-    def _delivery_callback(self, err, msg):
-        """Callback for message delivery reports."""
-        if err:
-            logger.error(f"Failed to deliver message: {err}")
-        else:
-            logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}] @ {msg.offset()}")
+        kafka_config = Config.get_kafka_config()
+        return KafkaProducer(
+            **kafka_config,
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            acks="all",
+            retries=3,
+            max_in_flight_requests_per_connection=1,
+        )
 
     def _on_message(self, ws: websocket.WebSocketApp, message: str) -> None:
         """Handle incoming WebSocket messages."""
@@ -61,17 +53,26 @@ class CryptoProducer:
             }
 
             # Send to Kafka
-            self.producer.produce(
-                Config.KAFKA_TOPIC,
-                value=json.dumps(trade_event).encode("utf-8"),
-                callback=self._delivery_callback,
-            )
-            self.producer.poll(0)
+            future = self.producer.send(Config.KAFKA_TOPIC, value=trade_event)
+            future.add_callback(self._on_send_success)
+            future.add_errback(self._on_send_error)
 
             logger.debug(f"Sent trade: {trade_event['symbol']} @ ${trade_event['price']}")
 
         except Exception as e:
             logger.error(f"Error processing message: {e}")
+
+    def _on_send_success(self, record_metadata) -> None:
+        """Callback for successful send."""
+        logger.debug(
+            f"Message sent to {record_metadata.topic} "
+            f"partition {record_metadata.partition} "
+            f"offset {record_metadata.offset}"
+        )
+
+    def _on_send_error(self, exception: Exception) -> None:
+        """Callback for send errors."""
+        logger.error(f"Failed to send message: {exception}")
 
     def _on_error(self, ws: websocket.WebSocketApp, error: Exception) -> None:
         """Handle WebSocket errors."""
@@ -129,6 +130,7 @@ class CryptoProducer:
             self.ws.close()
         if self.producer:
             self.producer.flush()
+            self.producer.close()
         logger.info("Producer closed")
 
 

@@ -5,7 +5,8 @@ import logging
 from collections import deque
 from typing import Dict, Deque
 from datetime import datetime
-from confluent_kafka import Consumer, KafkaError
+from kafka import KafkaConsumer
+from kafka.errors import KafkaError
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -61,21 +62,17 @@ class CryptoConsumer:
         self.Session = sessionmaker(bind=self.engine)
         self.aggregator = TradeAggregator()
 
-    def _create_consumer(self) -> Consumer:
+    def _create_consumer(self) -> KafkaConsumer:
         """Create and configure Kafka consumer."""
-        config = {
-            "bootstrap.servers": Config.KAFKA_BOOTSTRAP_SERVERS,
-            "sasl.mechanism": "SCRAM-SHA-256",
-            "security.protocol": "SASL_SSL",
-            "sasl.username": Config.KAFKA_USERNAME,
-            "sasl.password": Config.KAFKA_PASSWORD,
-            "group.id": "crypto-consumer-group",
-            "auto.offset.reset": "latest",
-            "enable.auto.commit": True,
-        }
-        consumer = Consumer(config)
-        consumer.subscribe([Config.KAFKA_TOPIC])
-        return consumer
+        kafka_config = Config.get_kafka_config()
+        return KafkaConsumer(
+            Config.KAFKA_TOPIC,
+            **kafka_config,
+            value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+            auto_offset_reset="latest",
+            enable_auto_commit=True,
+            group_id="crypto-consumer-group",
+        )
 
     def _store_trade(self, trade: Dict, metrics: Dict) -> None:
         """Store trade data in database."""
@@ -157,20 +154,8 @@ class CryptoConsumer:
         logger.info(f"Subscribed to topic: {Config.KAFKA_TOPIC}")
 
         try:
-            while True:
-                msg = self.consumer.poll(1.0)
-
-                if msg is None:
-                    continue
-                if msg.error():
-                    if msg.error().code() == KafkaError._PARTITION_EOF:
-                        continue
-                    else:
-                        logger.error(f"Consumer error: {msg.error()}")
-                        continue
-
-                # Deserialize message
-                trade = json.loads(msg.value().decode("utf-8"))
+            for message in self.consumer:
+                trade = message.value
 
                 # Calculate metrics
                 metrics = self.aggregator.add_trade(
