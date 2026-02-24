@@ -6,7 +6,7 @@ websocket-client==1.7.0
 
 # Database
 psycopg2-binary==2.9.9
-sqlalchemy==2.0.25
+sqlalchemy>=2.0.36
 
 # Data Processing (flexible versions for pre-built wheels)
 pandas>=2.0.0
