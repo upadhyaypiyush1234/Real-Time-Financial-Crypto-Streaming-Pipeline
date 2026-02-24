@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  producer:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    networks:
+      - crypto-network
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - postgres
+    networks:
+      - crypto-network
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - crypto-network
+
+networks:
+  crypto-network:
+    driver: bridge
